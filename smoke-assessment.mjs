@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import {assess} from './worker.mjs';
+process.loadEnvFile('.env.local');
+const wav=new Uint8Array(44+32000),v=new DataView(wav.buffer),text=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+text(0,'RIFF');v.setUint32(4,wav.length-8,true);text(8,'WAVE');text(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,16000,true);v.setUint32(28,32000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);text(36,'data');v.setUint32(40,32000,true);
+const body=process.argv[2]?fs.readFileSync(process.argv[2]):wav;
+const target=process.argv[3]||'word-1';
+const request=new Request('https://marathi-mitra-learning.mai3yee.chatgpt.site/api/assess-pronunciation?target='+target,{method:'POST',headers:{origin:'https://marathi-mitra-learning.mai3yee.chatgpt.site','oai-authenticated-user-id':'local-validation'},body});
+const safeFetch=async(url,options)=>{const response=await fetch(url,options);if(!response.ok){const error=await response.clone().json().catch(()=>null);console.log(JSON.stringify({providerStatus:response.status,errorCode:error?.error?.code,errorType:error?.error?.type,message:error?.error?.message?.slice(0,450)}));}return response;};
+const response=await assess(request,{OPENAI_API_KEY:process.env.OPENAI_API_KEY},safeFetch);
+console.log(JSON.stringify({status:response.status,assessment:await response.json()}));
+if(!response.ok)process.exitCode=1;

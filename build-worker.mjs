@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import path from 'node:path';
+const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mp3':'audio/mpeg'};
+const files=['index.html','style.css','app.js','audio-map.js','microphone.js','scoring.js',...fs.readdirSync('dist/audio').filter(x=>x.endsWith('.mp3')).map(x=>'audio/'+x)];
+const assets=Object.fromEntries(files.map(file=>['/'+file,{type:types[path.extname(file)],data:fs.readFileSync('dist/'+file).toString('base64')}]));
+const source=fs.readFileSync('dist/app.js','utf8');
+const lessons=vm.runInNewContext(source.slice(0,source.indexOf('const storageKey'))+';lessons');
+const targets=Object.fromEntries(lessons.flatMap((l,i)=>l.items.map((w,j)=>[`word-${i*3+j+1}`,{word:w[0],transliteration:w[1],audio:`audio/word-${i*3+j+1}.mp3`}])));
+fs.mkdirSync('dist/server',{recursive:true});
+fs.writeFileSync('dist/server/assets.js','export const assets='+JSON.stringify(assets)+';\nexport const targets='+JSON.stringify(targets)+';\n');
+fs.writeFileSync('dist/server/index.js',fs.readFileSync('worker.mjs','utf8').replace("'./dist/server/assets.js'","'./assets.js'"));
+console.log('Built scoring Worker and '+files.length+' bundled assets.');

@@ -1,6 +1,6 @@
 'use strict';
 // Short-lived voice practice: microphone audio stays in browser memory.
-window.createMicrophonePractice=function({button,status,playback,container,beforeStart=()=>{}}){
+window.createMicrophonePractice=function({button,status,playback,container,beforeStart=()=>{},onRecordingStarted=()=>{},onRecordingReady=()=>{}}){
   let stream=null,recorder=null,url=null,timer=null,token=0,disposed=false,pending=false;
   const stopTracks=()=>{stream?.getTracks().forEach(track=>track.stop());stream=null;};
   function setIdle(){button.disabled=false;button.textContent='● Record my voice';button.setAttribute('aria-pressed','false');container.classList.remove('recording');}
@@ -11,7 +11,7 @@ window.createMicrophonePractice=function({button,status,playback,container,befor
     if(recorder?.state==='recording'){stop();return;}
     beforeStart();
     if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){status.textContent='This browser cannot record your voice. Open this app in Chrome, Edge, or Safari and allow the microphone.';return;}
-    clearClip();pending=true;const request=++token;
+    clearClip();onRecordingStarted();pending=true;const request=++token;
     button.disabled=true;button.textContent='Allow microphone…';status.textContent='Ask a grown-up to choose Allow in the microphone prompt.';
     try{
       const acquired=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
@@ -27,6 +27,7 @@ window.createMicrophonePractice=function({button,status,playback,container,befor
         if(!clip.size){status.textContent='No audio was captured. Tap Record my voice and try again.';return;}
         url=URL.createObjectURL(clip);playback.src=url;playback.hidden=false;
         status.textContent='Your voice is ready! Press play below, then listen to the Marathi word and try again.';
+        onRecordingReady(clip);
       };
       active.start();pending=false;button.disabled=false;button.textContent='■ Stop recording';button.setAttribute('aria-pressed','true');container.classList.add('recording');
       status.textContent='Microphone is on. Say the word, then tap Stop recording. Stops automatically after 10 seconds.';
