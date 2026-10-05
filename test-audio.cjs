@@ -15,7 +15,7 @@ let rejectPlay = false;
 const player = { pause() { this.paused = true; }, play() { this.paused = false; return rejectPlay ? Promise.reject(Object.assign(new Error('blocked'), { name: 'NotAllowedError' })) : Promise.resolve(); }, addEventListener() {} };
 const button = { tagName: 'BUTTON', textContent: 'Listen', attributes: {}, setAttribute(k,v) {this.attributes[k]=v;}, removeAttribute(k) {delete this.attributes[k];} };
 const messages = [];
-const context = vm.createContext({document:{getElementById:()=>player,activeElement:button,baseURI:'https://example.test/'},pronunciationAudio:audioMap,stopRecognition(){},toast:m=>messages.push(m),URL});
+const context = vm.createContext({document:{getElementById:()=>player,activeElement:button,baseURI:'https://example.test/'},microphonePractice:null,pronunciationAudio:audioMap,stopRecognition(){},toast:m=>messages.push(m),URL});
 vm.runInContext(source.slice(source.indexOf('const pronunciationPlayer='),source.indexOf('function stopRecognition()')),context);
 (async()=>{
   await vm.runInContext("say('नमस्कार')",context);
